@@ -11,7 +11,8 @@
     "node": ">=10"
   },
   "scripts": {
-    "start": "tsdx watch",
+    "start": "tsdx watch --onSuccess 'npm run cp:file example/src/lib'",
+    "cp:file": "sh ./scripts/after-build.sh",
     "build": "tsdx build",
     "test": "tsdx test --passWithNoTests",
     "lint": "tsdx lint",
@@ -20,6 +21,9 @@
     "size": "size-limit",
     "analyze": "size-limit --why",
     "semantic-release": "semantic-release --branches main"
+  },
+  "bin": {
+    "r2-om": "./bin/index.js"
   },
   "husky": {
     "hooks": {
@@ -51,6 +55,7 @@
   ],
   "devDependencies": {
     "@size-limit/preset-small-lib": "^7.0.4",
+    "@types/yargs": "^17.0.10",
     "cz-conventional-changelog": "^3.3.0",
     "husky": "^7.0.4",
     "semantic-release": "^18.0.1",
@@ -68,5 +73,7 @@
     "type": "git",
     "url": "https://github.com/kmariappan/r2-om.git"
   },
-  "peerDependencies": {}
+  "dependencies": {
+    "yargs": "^17.5.1"
+  }
 }
