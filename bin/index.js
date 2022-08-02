@@ -4,7 +4,8 @@ const copy = require("recursive-copy");
 const rimraf = require('rimraf')
 const InitialSchemaTemplate = require('./schema.js')
 const fse = require('fs-extra')
-const { spawn } = require('child_process')
+const { spawn, exec } = require('child_process')
+//const prettier = require("prettier");
 
 
 var argv = require('yargs/yargs')(process.argv.slice(2))
@@ -12,9 +13,9 @@ var argv = require('yargs/yargs')(process.argv.slice(2))
     .argv;
 
 const targetDir = argv?.target
-const target = targetDir ? `${process.cwd()}/${targetDir}` : `${process.cwd()}/r2-om-repository/`
+const target = targetDir ? `${process.cwd()}/${targetDir}` : `${process.cwd()}/r2om-repository/`
 
-const ConfigFileName = 'r2-om.config.js'
+const ConfigFileName = 'r2om.config.js'
 const ConfigFilePath = `${process.cwd()}/${ConfigFileName}`
 
 
@@ -33,7 +34,7 @@ const prepareTemplatefiles = async () => {
     await new Promise(resolve => rimraf(target, resolve));
     return new Promise((resolve) => {
         copy(
-            "./node_modules/r2-om/src/lib/upstash",
+            "./node_modules/r2om/src/lib/upstash",
             `${target}/`,
             (error, results) => {
                 if (error) {
@@ -52,7 +53,7 @@ const prepareTemplatefiles = async () => {
 
 const createFile = async (filename) => {
     await Fs.writeFile(filename, InitialSchemaTemplate)
-    console.log(`${filename} Created ✨`);
+    console.log(`${filename} Created... ✨`);
 }
 
 if (argv._[0] === 'init') {
@@ -60,8 +61,29 @@ if (argv._[0] === 'init') {
         if (!res) {
             createFile(ConfigFileName)
         } else {
-            console.log('Config File exists Already')
+            console.log('Config File exists Already 😳')
         }
+    })
+}
+
+const generateType = () => {
+    return new Promise((resolve, reject) => {
+
+        exec(`node ${ConfigFileName}`, (err, stdout, stderr) => {
+            if (err) {
+                console.log('err')
+                console.log(err)
+            }
+            if (stdout) {
+                console.log(stdout)
+                resolve()
+            }
+            if (stderr) {
+                console.log(
+                    stderr
+                )
+            }
+        })
     })
 }
 
@@ -70,21 +92,18 @@ if (argv._[0] === 'generate') {
         if (res) {
             prepareTemplatefiles().then(() => {
                 const destination = `${target}/lib/${ConfigFileName}`
-
                 fse.copy(ConfigFilePath, destination).then(() => {
                     process.chdir(`${target}/lib/`)
-                    const generate = spawn("node", [ConfigFileName]);
-                    generate.stdout.on("data", data => {
-                        console.log(`${data}`);
+                    generateType().then(() => {
                         fse.rm(destination)
-                    });
+                    })
                 })
             })
-
         } else {
-            console.log('The config file does not exist in the current location')
+            console.log('The config file does not exist in the current location 😔')
         }
     })
 }
+
 
 

@@ -3,9 +3,9 @@
 ## Installation
 
 ```bash
-npm i r2-om
+npm i r2om
 
  or
 
-yarn add r2-om
+yarn add r2om
 ```

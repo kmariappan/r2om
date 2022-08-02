@@ -1,5 +1,5 @@
 const InitialSchemaTemplate = `
-const { createSchema } = require('r2-om')
+const { createSchema, generateModels } = require('r2om')
 
 const schema = createSchema({
     'user': {
@@ -44,7 +44,7 @@ const schema = createSchema({
     }
 })
 
-export default schema
+generateModels(schema)
 `
 
 

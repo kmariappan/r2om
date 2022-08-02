@@ -23,7 +23,7 @@
     "semantic-release": "semantic-release --branches main"
   },
   "bin": {
-    "r2-om": "./bin/index.js"
+    "r2om": "./bin/index.js"
   },
   "husky": {
     "hooks": {
@@ -39,17 +39,17 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "name": "r2-om",
+  "name": "r2om",
   "author": "Karthikeyan Mariappan",
   "description": "Redis Rest Api based Object Mapper",
-  "module": "dist/r2-om.esm.js",
+  "module": "dist/r2om.esm.js",
   "size-limit": [
     {
-      "path": "dist/r2-om.cjs.production.min.js",
+      "path": "dist/r2om.cjs.production.min.js",
       "limit": "10 KB"
     },
     {
-      "path": "dist/r2-om.esm.js",
+      "path": "dist/r2om.esm.js",
       "limit": "10 KB"
     }
   ],
@@ -71,7 +71,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/kmariappan/r2-om.git"
+    "url": "https://github.com/kmariappan/r2om.git"
   },
   "dependencies": {
     "fs-extra": "^10.1.0",
