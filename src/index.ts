@@ -1,32 +1,11 @@
-import { Schema } from './types/content'
+import { ModelGenerator } from './model-generator'
+import { Schema, GenerateOptions } from './types/base'
 
 export const createSchema = <T extends string>(data: Schema<T>): Schema<T> => data
 
-createSchema<'student' | 'address'>({
-    'student': {
-        attributes: {
-            'firstname': {
-                type: 'string',
-            }
-        }
-    },
-    'address': {
-        attributes: {
-            'city': {
-                type: 'string'
-            },
-            'postalcode': {
-                type: 'number',
-                required: true
-            }
-
-        }
-    }
-})
-
-
-const main = async () => {
-    console.log('huhu')
+export const generateModels = <T extends string>(schema: Schema<T>, options?: GenerateOptions) => {
+    const builder = new ModelGenerator(schema, options ?? {})
+    builder.generate()
 }
 
-main()
+export type { Schema }

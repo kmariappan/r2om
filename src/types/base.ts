@@ -1,6 +1,5 @@
 export type Schema<T extends string> = Record<T, Model<T>>;
 
-
 type FieldType =
     | 'string'
     | 'boolean'
@@ -26,6 +25,12 @@ export type Attribute<T> = {
 
 
 export type Model<T> = {
+    label?: string;
     modelObjectName?: string;
     attributes: Attribute<T>;
+};
+
+
+export type GenerateOptions = {
+    path?: string;
 };
