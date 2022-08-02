@@ -8,7 +8,7 @@ export class RepositoryCollection {
     public address: EntityModel<Address>
 
     constructor(private redis: Redis) {
-        this.user = new EntityModel<User>('user', this.redis)
-        this.address = new EntityModel<Address>('address', this.redis)
+        this.user = new EntityModel<User>('user', this.redis, '')
+        this.address = new EntityModel<Address>('address', this.redis, '')
     }
 }

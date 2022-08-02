@@ -1,5 +1,5 @@
 import { ModelGenerator } from './model-generator'
-import { Schema, GenerateOptions } from './types/base'
+import { Schema, GenerateOptions } from './lib/upstash/types/base'
 
 export const createSchema = <T extends string>(data: Schema<T>): Schema<T> => data
 

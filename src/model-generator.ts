@@ -1,4 +1,4 @@
-import { Attribute, Field, Model, Schema, GenerateOptions } from "./types/base";
+import { Attribute, Field, Model, Schema, GenerateOptions } from "./lib/upstash/types/base";
 import { capitalize } from "./utils/helpers";
 import { promisify } from 'util';
 import fs from 'fs';
@@ -82,8 +82,9 @@ updatedAt: string
         let manipulatedImportStatement = ``;
 
         items.forEach((item, index) => {
+            const schemaString = JSON.stringify(this.schema[item])
             manipulatedImportStatement = `${manipulatedImportStatement}${index === 0 ? '' : '\n'}this.${item
-                } = new EntityModel('${capitalize(item)}', this.redis);`;
+                } = new EntityModel('${capitalize(item)}', this.redis,${schemaString});`;
         });
 
         return manipulatedImportStatement;

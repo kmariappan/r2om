@@ -1,13 +1,14 @@
 import { Redis } from "@upstash/redis";
+import { Model } from "../types/base";
 
-type OmitId<T> = Omit<T, 'id'|'createdAt'|'updatedAt'>
+type OmitId<T> = Omit<T, 'id' | 'createdAt' | 'updatedAt'>
 export class EntityModel<T> {
 
-    constructor(private name: string, private redis: Redis) { }
+    constructor(private name: string, private redis: Redis, private schema: string) { }
 
     async create(value: OmitId<T>): Promise<any> {
         const id = Date.now().toString()
-        return await this.redis.hset(this.name, { [id]: { id, ...value } })
+        return await this.redis.hset(this.name, { [id]: { id, createdAt: id, updatedAt: id, ...value } })
     }
 
     /*     async createMany(values: OmitId<T>[]): Promise<"OK"> {
@@ -32,6 +33,10 @@ export class EntityModel<T> {
         return data
     }
 
+    async getSchema(): Promise<Model<T>> {        
+        return JSON.parse(this.schema) as Model<T>
+    }
+
     async findMany(ids: string[]) {
         //const ids = args.map(a => this._getnerateKeyById(a))
         const res = await this.redis.hmget<Record<string, T>>(this.name, ...ids)
@@ -40,7 +45,6 @@ export class EntityModel<T> {
             ...value,
         }));
     }
-
 
     async findOne(id: string): Promise<T | null> {
         return await this.redis.hget<T>(this.name, id)

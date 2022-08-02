@@ -3,9 +3,9 @@
 ## Installation
 
 ```bash
-npm i r2om
+npm i r2om @upstash/redis
 
  or
 
-yarn add r2om
+yarn add r2om @upstash/redis
 ```

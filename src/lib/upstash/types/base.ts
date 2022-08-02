@@ -11,10 +11,11 @@ type RelationType = 'oneToOne' | 'oneToMany' | 'manyToOne' | 'manyToMany';
 export type Field<T> = {
     type: FieldType;
     required?: boolean;
-    unique?: boolean;
     relation?: RelationType;
     releatedTo?: T
+    unique?: boolean;
     minLength?: number;
+    maxLength?: number;
     min?: number;
     max?: number;
 };
