@@ -1,14 +1,40 @@
 import { Redis } from "@upstash/redis";
-import { Model } from "../types/base";
+import { ConstructorArgs, Model } from "../types/base";
+import cuid from './external/cuid'
+import { FilterBuilder } from "./filter-builder";
 
 type OmitId<T> = Omit<T, 'id' | 'createdAt' | 'updatedAt'>
-export class EntityModel<T> {
 
-    constructor(private name: string, private redis: Redis, private schema: string) { }
+export class EntityModel<T, R = any> {
+    private name: string
+    private redis: Redis
+    private schema: string
+    private args: ConstructorArgs
+
+    constructor(args: ConstructorArgs) {
+        this.name = args.name
+        this.redis = args.redis
+        this.schema = args.schema
+        this.args = args
+    }
+
+    findAll(): FilterBuilder<T, R> {
+        return new FilterBuilder<T, R>(this.args, 'all')
+    }
+
+    findOne(id: string): FilterBuilder<T, R> {
+        return new FilterBuilder<T, R>(this.args, 'one', id)
+    }
+
+
+    findMany(ids: string[]) {
+        return new FilterBuilder<T, R>(this.args, 'many', ids)
+    }
 
     async create(value: OmitId<T>): Promise<any> {
-        const id = Date.now().toString()
-        return await this.redis.hset(this.name, { [id]: { id, createdAt: id, updatedAt: id, ...value } })
+        const time = Date.now().toString()
+        const id = cuid()
+        return await this.redis.hset(this.name, { [id]: { id, createdAt: time, updatedAt: time, ...value } })
     }
 
     /*     async createMany(values: OmitId<T>[]): Promise<"OK"> {
@@ -28,28 +54,12 @@ export class EntityModel<T> {
             return this.redis.set<Partial<T>>(key, { ...updatedDate })
         }
      */
-    async getAll(): Promise<T[]> {
-        const data = await this.redis.hvals(this.name) as T[]
-        return data
-    }
 
-    async getSchema(): Promise<Model<T>> {        
+
+
+    async getSchema(): Promise<Model<T>> {
         return JSON.parse(this.schema) as Model<T>
     }
-
-    async findMany(ids: string[]) {
-        //const ids = args.map(a => this._getnerateKeyById(a))
-        const res = await this.redis.hmget<Record<string, T>>(this.name, ...ids)
-        return Object.entries(res ?? {}).map(([key, value]) => ({
-            id: key,
-            ...value,
-        }));
-    }
-
-    async findOne(id: string): Promise<T | null> {
-        return await this.redis.hget<T>(this.name, id)
-    }
-
 
     async count(): Promise<number> {
         return new Promise<number>((resolve) => {
@@ -97,5 +107,4 @@ export class EntityModel<T> {
     private async _getAllKeys(): Promise<string[]> {
         return await this.redis.hkeys(`${this.name}`)
     }
-
 }

@@ -1,3 +1,4 @@
+import { Redis } from "@upstash/redis"
 export type Schema<T extends string> = Record<T, Model<T>>;
 
 type FieldType =
@@ -6,18 +7,20 @@ type FieldType =
     | 'number'
     | 'relation'
 
-type RelationType = 'oneToOne' | 'oneToMany' | 'manyToOne' | 'manyToMany';
+export type RelationType = 'oneToOne' | 'belongsTo' | 'oneToMany' | 'manyToMany';
 
 export type Field<T> = {
     type: FieldType;
-    required?: boolean;
     relation?: RelationType;
     releatedTo?: T
+    required?: boolean;
     unique?: boolean;
     minLength?: number;
     maxLength?: number;
     min?: number;
     max?: number;
+    scalarIdentifier?: string
+    isScalarField?: boolean
 };
 
 export type Attribute<T> = {
@@ -35,3 +38,22 @@ export type Model<T> = {
 export type GenerateOptions = {
     path?: string;
 };
+
+export type ConstructorArgs = {
+    name: string
+    redis: Redis
+    schema: string
+}
+
+type ErrorType = 'validation' | 'uniquefield' | 'other'
+
+type Error = {
+    type: ErrorType
+    message: string
+}
+
+export type Result<T = void> = {
+    success: boolean
+    data: null | T
+    errors?: Error
+}

@@ -72,7 +72,7 @@ updatedAt: string
         let manipulatedImportStatement = ``;
 
         items.forEach((item, index) => {
-            manipulatedImportStatement = `${manipulatedImportStatement}${index === 0 ? '' : '\n'}${item}: EntityModel<${capitalize(item)}>;`;
+            manipulatedImportStatement = `${manipulatedImportStatement}${index === 0 ? '' : '\n'}${item}: EntityModel<${capitalize(item)},Pick<${capitalize(item)}, ${this._getRelationsFieldsUnionString(item)}>>;`;
         });
 
         return manipulatedImportStatement;
@@ -84,7 +84,7 @@ updatedAt: string
         items.forEach((item, index) => {
             const schemaString = JSON.stringify(this.schema[item])
             manipulatedImportStatement = `${manipulatedImportStatement}${index === 0 ? '' : '\n'}this.${item
-                } = new EntityModel('${capitalize(item)}', this.redis,${schemaString});`;
+                } = new EntityModel( {name:'${capitalize(item)}', redis: this.redis,schema:'${schemaString}'});`;
         });
 
         return manipulatedImportStatement;
@@ -116,6 +116,33 @@ updatedAt: string
         `;
     }
 
+    private _getRelationsFieldsUnionString(model: string): string {
+        let fieldsUnionString = ''
+
+        const relatedFields: string[] = []
+
+        const entries = Object.entries<Model<T>>(this.schema)
+        entries.forEach(entry => {
+            if (entry[0] === model) {
+                const { attributes } = entry[1]
+                const fields = Object.keys(attributes)
+                fields.forEach((field) => {
+                    if (attributes[field].type === 'relation') {
+                        relatedFields.push(field)
+                    }
+                })
+            }
+        })
+
+        if (relatedFields.length > 0) {
+            relatedFields.forEach((f, index) => {
+                fieldsUnionString = relatedFields.length - 1 !== index ? `${fieldsUnionString}'${f}' | ` : `${fieldsUnionString}'${f}'`
+            })
+        }
+
+        return fieldsUnionString
+    }
+
 
     private _manipulateFieldType = (field: Field<T>): string => {
         switch (field.type) {
@@ -123,7 +150,7 @@ updatedAt: string
                 let prefix = '';
                 let suffix = '';
 
-                if (field.relation === 'oneToMany') {
+                if (field.relation === 'oneToMany' || field.relation === 'manyToMany') {
                     suffix = `[]`;
                 }
 

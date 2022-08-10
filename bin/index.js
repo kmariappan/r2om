@@ -15,7 +15,7 @@ var argv = require('yargs/yargs')(process.argv.slice(2))
 const targetDir = argv?.target
 const target = targetDir ? `${process.cwd()}/${targetDir}` : `${process.cwd()}/r2om-repository/`
 
-const ConfigFileName = 'r2om.config.js'
+const ConfigFileName = 'r2om.config.ts'
 const ConfigFilePath = `${process.cwd()}/${ConfigFileName}`
 
 
@@ -69,7 +69,7 @@ if (argv._[0] === 'init') {
 const generateType = () => {
     return new Promise((resolve, reject) => {
 
-        exec(`node ${ConfigFileName}`, (err, stdout, stderr) => {
+        exec(`ts-node ${ConfigFileName}`, (err, stdout, stderr) => {
             if (err) {
                 console.log('err')
                 console.log(err)
