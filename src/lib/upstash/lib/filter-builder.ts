@@ -100,16 +100,22 @@ export class FilterBuilder<T, R> {
             const k = key as unknown as string
             const { relation, releatedTo, scalarIdentifier } = this.getModelKeyFromRelationProperty(k)
             const relatedData = await this.args.redis.hvals(releatedTo)
-            this.result.data?.forEach((p: any) => {
-                const filteredData = relatedData.filter((d: any) => d[scalarIdentifier] === p.id)
-                if (relation === 'oneToOne') {
-                    p[key] = filteredData[0]
+            try {
+                this.result.data?.forEach((p: any) => {
+                    if (relation === 'oneToOne') {
+                        const filteredData = relatedData.filter((d: any) => d.id === p.id)
+                        p[key] = filteredData[0] ?? null
 
-                } else {
-                    p[key] = filteredData
-                }
-            })
-            resolve(true)
+                    } else {
+                        const filteredData = relatedData.filter((d: any) => d[scalarIdentifier] === p.id)
+                        p[key] = filteredData
+                    }
+                })
+                resolve(true)
+            } catch (error) {
+                resolve(false)
+            }
+
         })
     }
 

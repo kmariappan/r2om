@@ -27,13 +27,12 @@ export type Attribute<T> = {
     [key: string]: Field<T>;
 };
 
-
 export type Model<T> = {
     label?: string;
+    isOneToOneModel?: boolean;
     modelObjectName?: string;
     attributes: Attribute<T>;
 };
-
 
 export type GenerateOptions = {
     path?: string;

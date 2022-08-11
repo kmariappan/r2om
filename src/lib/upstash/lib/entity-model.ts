@@ -8,13 +8,13 @@ type OmitId<T> = Omit<T, 'id' | 'createdAt' | 'updatedAt'>
 export class EntityModel<T, R = any> {
     private name: string
     private redis: Redis
-    private schema: string
+    private schema: Model<T>
     private args: ConstructorArgs
 
     constructor(args: ConstructorArgs) {
         this.name = args.name
         this.redis = args.redis
-        this.schema = args.schema
+        this.schema = JSON.parse(args.schema) as Model<T>
         this.args = args
     }
 
@@ -32,8 +32,14 @@ export class EntityModel<T, R = any> {
     }
 
     async create(value: OmitId<T>): Promise<any> {
+        let id = cuid()
+
+        if (this.schema.isOneToOneModel) {
+            const { scalarId } = value as unknown as any
+            id = scalarId
+        }
+        
         const time = Date.now().toString()
-        const id = cuid()
         return await this.redis.hset(this.name, { [id]: { id, createdAt: time, updatedAt: time, ...value } })
     }
 
@@ -58,7 +64,7 @@ export class EntityModel<T, R = any> {
 
 
     async getSchema(): Promise<Model<T>> {
-        return JSON.parse(this.schema) as Model<T>
+        return this.schema
     }
 
     async count(): Promise<number> {

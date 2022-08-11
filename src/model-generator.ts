@@ -12,7 +12,12 @@ export class ModelGenerator<T extends string> {
 
         const ModelKeys: string[] = []
 
-        let typeString = ''
+        let typeString = `
+export type DefaultProps = {
+id: string
+createdAt: string
+updatedAt: string
+}\n`
 
         entries.forEach(entry => {
             ModelKeys.push(entry[0])
@@ -31,7 +36,6 @@ export class ModelGenerator<T extends string> {
         } catch (error) {
             console.log(error)
         }
-
     }
 
     private _createFile = async (filename: string, data: string) => {
@@ -41,14 +45,10 @@ export class ModelGenerator<T extends string> {
         console.log(`${filename} Created ✨`);
     };
 
-
     private _generateType = (name: string, data: Model<T>) => {
-        return `\n
-export type ${capitalize(name)} = {
-id: string | number
+        return `export type ${capitalize(name)} = DefaultProps & {
+${data.isOneToOneModel ? `scalarId: string`:'' }    
 ${this._getLines(data.attributes)}
-createdAt: string
-updatedAt: string
 } `;
     };
 
@@ -67,12 +67,13 @@ updatedAt: string
         return line;
     };
 
-
     private _getDeclerations(items: string[]): string {
         let manipulatedImportStatement = ``;
 
         items.forEach((item, index) => {
-            manipulatedImportStatement = `${manipulatedImportStatement}${index === 0 ? '' : '\n'}${item}: EntityModel<${capitalize(item)},Pick<${capitalize(item)}, ${this._getRelationsFieldsUnionString(item)}>>;`;
+            this._getRelationsFieldsUnionString(item) ?
+                manipulatedImportStatement = `${manipulatedImportStatement}${index === 0 ? '' : '\n'}${item}: EntityModel<${capitalize(item)},Pick< ${capitalize(item)}, ${this._getRelationsFieldsUnionString(item)}>>;` :
+                manipulatedImportStatement = `${manipulatedImportStatement}${index === 0 ? '' : '\n'}${item}: EntityModel<${capitalize(item)}>;`;
         });
 
         return manipulatedImportStatement;
@@ -84,7 +85,7 @@ updatedAt: string
         items.forEach((item, index) => {
             const schemaString = JSON.stringify(this.schema[item])
             manipulatedImportStatement = `${manipulatedImportStatement}${index === 0 ? '' : '\n'}this.${item
-                } = new EntityModel( {name:'${capitalize(item)}', redis: this.redis,schema:'${schemaString}'});`;
+                } = new EntityModel( {name:'${item}', redis: this.redis,schema:'${schemaString}'});`;
         });
 
         return manipulatedImportStatement;
@@ -100,7 +101,6 @@ updatedAt: string
 
         return manipulatedImportStatement;
     }
-
 
     private _createRepositoryClass(input: string[]): string {
         return `import { Redis } from "@upstash/redis";
@@ -127,7 +127,7 @@ updatedAt: string
                 const { attributes } = entry[1]
                 const fields = Object.keys(attributes)
                 fields.forEach((field) => {
-                    if (attributes[field].type === 'relation') {
+                    if (attributes[field].type === 'relation' && !attributes[field].isScalarField) {
                         relatedFields.push(field)
                     }
                 })
@@ -143,7 +143,6 @@ updatedAt: string
         return fieldsUnionString
     }
 
-
     private _manipulateFieldType = (field: Field<T>): string => {
         switch (field.type) {
             case 'relation': {
@@ -154,20 +153,19 @@ updatedAt: string
                     suffix = `[]`;
                 }
 
-                if (field.releatedTo) {
+                if (field.releatedTo && !field.isScalarField) {
                     prefix = capitalize(field.releatedTo)
+                }
+
+                if (field.isScalarField) {
+                    prefix = 'string'
                 }
 
                 return `${prefix}${suffix}`;
             }
-
             default:
                 return field.type;
         }
     };
-
-
-
-
 }
 

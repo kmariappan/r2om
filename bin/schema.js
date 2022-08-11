@@ -1,48 +1,81 @@
 const InitialSchemaTemplate = `
-const { createSchema, generateModels } = require('r2om')
+import { createSchema, generateModels } from 'r2om'
 
-const schema = createSchema({
+type Models = 'user' | 'profile' | 'post' | 'category'
+
+const schema = createSchema<Models>({
     'user': {
-        label: 'User',
+        label: 'User',        
         attributes: {
-            firstname: {
+            'firstname': {
                 type: 'string',
                 required: true
             },
-            lastname: {
+            'lastname': {
                 type: 'string'
             },
-            email: {
-                type: 'string',
-                required: true,
-                unique: true
+            'profile': {
+                type: 'relation',
+                relation: 'oneToOne',
+                releatedTo: 'profile',
+                scalarIdentifier: 'userId'
             },
-            age: {
-                type: 'number'
-            },
-            addresses: {
+            'posts': {
                 type: 'relation',
                 relation: 'oneToMany',
-                releatedTo: 'address'
-
+                releatedTo: 'post',
+                scalarIdentifier: 'authorId'
             }
         }
     },
-    'address': {
-        label: 'Address',
+    'profile': {
+        label: 'Profile',
+        isOneToOneModel:true,
         attributes: {
-            city: {
+            username: {
+                type: 'string'
+            },
+            email: {
+                type: 'string'
+            }   
+        }
+    },
+    'category': {
+        label: 'Category',
+        attributes: {
+            name: {
                 type: 'string',
                 required: true
             },
-            postalCode: {
-                type: 'number',
-                required: true,
-                unique: true
+            posts: {
+                type: 'relation',
+                relation: 'manyToMany',
+                releatedTo: 'post'
+            }
+        }
+    },
+    'post': {
+        label: 'Post',
+        attributes: {
+            title: {
+                type: 'string',
+                required: true
+            },
+            authorId: {
+                type: 'relation',
+                relation: 'belongsTo',
+                releatedTo: 'user',
+                isScalarField: true
+            },
+            categories: {
+                type: 'relation',
+                relation: 'manyToMany',
+                releatedTo: 'category',
             }
         }
     }
 })
+
 
 generateModels(schema)
 `
