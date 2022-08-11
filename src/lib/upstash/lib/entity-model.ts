@@ -1,9 +1,8 @@
 import { Redis } from "@upstash/redis";
-import { ConstructorArgs, Model } from "../types/base";
+import { ConstructorArgs, DefaultProps, Model } from "../types/base";
 import cuid from './external/cuid'
 import { FilterBuilder } from "./filter-builder";
 
-type OmitId<T> = Omit<T, 'id' | 'createdAt' | 'updatedAt'>
 
 export class EntityModel<T, R = any> {
     private name: string
@@ -31,7 +30,7 @@ export class EntityModel<T, R = any> {
         return new FilterBuilder<T, R>(this.args, 'many', ids)
     }
 
-    async create(value: OmitId<T>): Promise<any> {
+    async create(value: Omit<T, keyof DefaultProps>): Promise<any> {
         let id = cuid()
 
         if (this.schema.isOneToOneModel) {

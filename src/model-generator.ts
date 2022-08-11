@@ -13,11 +13,7 @@ export class ModelGenerator<T extends string> {
         const ModelKeys: string[] = []
 
         let typeString = `
-export type DefaultProps = {
-id: string
-createdAt: string
-updatedAt: string
-}\n`
+import { DefaultProps } from "../types/base"\n`
 
         entries.forEach(entry => {
             ModelKeys.push(entry[0])

@@ -56,3 +56,10 @@ export type Result<T = void> = {
     data: null | T
     errors?: Error
 }
+
+export type DefaultProps = {
+    id: string
+    createdAt: string
+    updatedAt: string
+}
+
