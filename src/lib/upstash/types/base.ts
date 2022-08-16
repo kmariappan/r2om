@@ -52,9 +52,16 @@ export type ConstructorArgs = {
 
 type ErrorType = 'validation' | 'uniquefield' | 'other'
 
+export type ValidationError = {
+    path: string
+    message: string
+}
+
+
 type Error = {
     type: ErrorType
-    message: string
+    message?: string
+    validataionError?: ValidationError[]
 }
 
 export type Result<T = void> = {

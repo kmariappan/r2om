@@ -36,7 +36,7 @@ const schema = createSchema<Models>({
                 type: 'string'
             },
             email: {
-                type: 'string'
+                type: 'email'
             }   
         }
     },
