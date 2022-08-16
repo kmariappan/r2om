@@ -12,12 +12,15 @@ export class ModelGenerator<T extends string> {
 
         const ModelKeys: string[] = []
 
+        let validationString = ``
+
         let typeString = `
 import { DefaultProps } from "../types/base"\n`
 
         entries.forEach(entry => {
             ModelKeys.push(entry[0])
             typeString = `${typeString}${this._generateType(entry[0], entry[1])} \n`
+            validationString = `${validationString} ${this.generateValidationSchema(entry)} \n`
         })
 
         try {
@@ -25,10 +28,12 @@ import { DefaultProps } from "../types/base"\n`
                 this.options?.path ? `${this.options?.path}/generated-types.ts` : `./generated-types.ts`,
                 typeString)
             this._createFile(
+                this.options?.path ? `${this.options?.path}/generated-validation.ts` : `./generated-validation.ts`,
+                validationString)
+            this._createFile(
                 this.options?.path ? `${this.options?.path}/generated-repository.ts` : `./generated-repository.ts`,
                 this._createRepositoryClass(ModelKeys)
             )
-
         } catch (error) {
             console.log(error)
         }
@@ -43,7 +48,7 @@ import { DefaultProps } from "../types/base"\n`
 
     private _generateType = (name: string, data: Model<T>) => {
         return `export type ${capitalize(name)} = DefaultProps & {
-${data.isOneToOneModel ? `scalarId: string`:'' }    
+${data.isOneToOneModel ? `scalarId: string` : ''}    
 ${this._getLines(data.attributes)}
 } `;
     };
@@ -138,6 +143,50 @@ ${this._getLines(data.attributes)}
 
         return fieldsUnionString
     }
+
+    private generateValidationSchema = (data: [string, Model<any>]) => {
+        return `export const Zod${capitalize(data[0])}Schema = (z: any) => {
+            return z.object({                        
+                ${this.generateValidationLine(data[1].attributes)}
+            });
+        }`
+    }
+
+    private generateValidationLine = (attributes: any): string => {
+        let validationLine = ''
+        const attributeEntries = Object.entries(attributes)
+        const filterdProperties = attributeEntries.filter((attribute: any) => attribute[1].type !== 'relation')
+        filterdProperties.forEach((attribute, index) => {
+            const key = attribute[0]
+            const field = attribute[1] as unknown as Field<any>
+            validationLine = filterdProperties.length - 1 !== index ? `${validationLine}${this.generateZodObject(key, field)}, \n` : `${validationLine}${this.generateZodObject(key, field)}`
+        })
+        return validationLine
+    
+    }
+
+    private generateZodObject = (key: string, field: Field<any>): string => {
+        let object = ''
+        if (field.type !== 'relation') {
+            object = `${key}: z.`
+    
+            switch (field.type) {
+                case 'string':
+                    object = `${object}string(${field.requiredValidationMessage ? `{ required_error: '${field.requiredValidationMessage}' }` : ''})${field.required ? '' : '.optional()'}`
+                    break;
+                case 'email':
+                    object = `${object}string(${field.requiredValidationMessage ? `{ required_error: '${field.requiredValidationMessage}' }` : ''}).email(${field.validationMessage ? `{ message: '${field.validationMessage}'}` : ``})${field.required ? '' : '.optional()'}`
+                    break;
+                case 'number':
+                    object = `${object}number(${field.requiredValidationMessage ? `{ required_error: '${field.requiredValidationMessage}' }` : ''})${field.min ? `.gte(${field.min}${field.validationMessage ? `, { message: '${field.validationMessage}'}` : ``})` : ''}${field.max ? `.lte(${field.max} ${field.validationMessage ? `, { message: '${field.validationMessage}'}` : ``})` : ''}${field.required ? '' : '.optional()'}`
+                    break;
+                default:
+                    break;
+            }
+        }
+        return object
+    }
+    
 
     private _manipulateFieldType = (field: Field<T>): string => {
         switch (field.type) {

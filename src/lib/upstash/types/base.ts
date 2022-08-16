@@ -3,9 +3,11 @@ export type Schema<T extends string> = Record<T, Model<T>>;
 
 type FieldType =
     | 'string'
+    | 'email'
     | 'boolean'
     | 'number'
     | 'relation'
+
 
 export type RelationType = 'oneToOne' | 'belongsTo' | 'oneToMany' | 'manyToMany';
 
@@ -21,7 +23,9 @@ export type Field<T> = {
     min?: number;
     max?: number;
     scalarIdentifier?: string
-    isScalarField?: boolean    
+    isScalarField?: boolean
+    requiredValidationMessage?: string
+    validationMessage?: string
 };
 
 export type Attribute<T> = {
