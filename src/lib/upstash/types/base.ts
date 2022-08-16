@@ -47,6 +47,7 @@ export type ConstructorArgs = {
     name: string
     redis: Redis
     schema: string
+    validationSchema: () => any
 }
 
 type ErrorType = 'validation' | 'uniquefield' | 'other'

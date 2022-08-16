@@ -86,7 +86,7 @@ ${this._getLines(data.attributes)}
         items.forEach((item, index) => {
             const schemaString = JSON.stringify(this.schema[item])
             manipulatedImportStatement = `${manipulatedImportStatement}${index === 0 ? '' : '\n'}this.${item
-                } = new EntityModel( {name:'${item}', redis: this.redis,schema:'${schemaString}'});`;
+                } = new EntityModel( {name:'${item}', redis: this.redis, validationSchema: getZod${capitalize(item)}Schema(z), schema:'${schemaString}'});`;
         });
 
         return manipulatedImportStatement;
@@ -96,9 +96,11 @@ ${this._getLines(data.attributes)}
         let manipulatedImportStatement = ``;
 
         items.forEach((item, index) => {
-            manipulatedImportStatement = `${manipulatedImportStatement}${index === 0 ? '' : '\n'}import { ${capitalize(item)
-                } } from './generated-types'; `;
+            manipulatedImportStatement = `${manipulatedImportStatement}${index === 0 ? '' : '\n'}import { ${capitalize(item)}} from './generated-types'; `;
+            manipulatedImportStatement = `${manipulatedImportStatement}\nimport { getZod${capitalize(item)}Schema } from './generated-validation'; `;
         });
+
+        //import { ZodUserSchema } from './generated-validation'
 
         return manipulatedImportStatement;
     }
@@ -110,7 +112,7 @@ ${this._getLines(data.attributes)}
         
         export class RepositoryCollection {
           ${this._getDeclerations(input)}
-          constructor(private redis: Redis) {
+          constructor(private redis: Redis, z: any) {
             ${this._getInstantiations(input)}
           }
         }
@@ -145,7 +147,7 @@ ${this._getLines(data.attributes)}
     }
 
     private generateValidationSchema = (data: [string, Model<any>]) => {
-        return `export const Zod${capitalize(data[0])}Schema = (z: any) => {
+        return `export const getZod${capitalize(data[0])}Schema = (z: any) => {
             return z.object({                        
                 ${this.generateValidationLine(data[1].attributes)}
             });
@@ -162,14 +164,14 @@ ${this._getLines(data.attributes)}
             validationLine = filterdProperties.length - 1 !== index ? `${validationLine}${this.generateZodObject(key, field)}, \n` : `${validationLine}${this.generateZodObject(key, field)}`
         })
         return validationLine
-    
+
     }
 
     private generateZodObject = (key: string, field: Field<any>): string => {
         let object = ''
         if (field.type !== 'relation') {
             object = `${key}: z.`
-    
+
             switch (field.type) {
                 case 'string':
                     object = `${object}string(${field.requiredValidationMessage ? `{ required_error: '${field.requiredValidationMessage}' }` : ''})${field.required ? '' : '.optional()'}`
@@ -186,7 +188,7 @@ ${this._getLines(data.attributes)}
         }
         return object
     }
-    
+
 
     private _manipulateFieldType = (field: Field<T>): string => {
         switch (field.type) {
@@ -207,6 +209,9 @@ ${this._getLines(data.attributes)}
                 }
 
                 return `${prefix}${suffix}`;
+            }
+            case 'email': {
+                return 'string'
             }
             default:
                 return field.type;
