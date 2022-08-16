@@ -1,5 +1,5 @@
 import { Redis } from "@upstash/redis";
-import { ConstructorArgs, DefaultProps, Model } from "../types/base";
+import { ConstructorArgs, DefaultProps, Model, Result } from "../types/base";
 import cuid from './external/cuid'
 import { FilterBuilder } from "./filter-builder";
 
@@ -16,6 +16,14 @@ export class EntityModel<T, R = any> {
         this.schema = JSON.parse(args.schema) as Model<T>
         this.args = args
     }
+
+    /*    new(value: Omit<T, keyof DefaultProps>): Entity<T, R> {
+           return new Entity<T, R>(value, this.args)
+       }
+    */
+    /*     manage(value: Partial<T>): Entity<T, R> {
+            return new Entity<T, R>(value, this.args, true)
+        } */
 
     findAll(): FilterBuilder<T, R> {
         return new FilterBuilder<T, R>(this.args, 'all')
@@ -37,7 +45,7 @@ export class EntityModel<T, R = any> {
             const { scalarId } = value as unknown as any
             id = scalarId
         }
-        
+
         const time = Date.now().toString()
         return await this.redis.hset(this.name, { [id]: { id, createdAt: time, updatedAt: time, ...value } })
     }
@@ -91,6 +99,41 @@ export class EntityModel<T, R = any> {
         return await this.deleteMany(keys)
     }
 
+    async attach(thisId: string, relationKey: keyof R, relationEntityId: string): Promise<Result> {
+        const key = relationKey as string
+        if (this.schema.attributes[key].relation !== 'manyToMany') {
+            return {
+                success: false,
+                data: null
+            }
+        } else {
+            const { relateThrough } = this.schema.attributes[key]
+
+            if (relateThrough) {
+                let id = cuid()
+                const data: any = {
+                    [`${this.name}Id`]: thisId
+                }
+                relateThrough.split('_').forEach((d) => {
+                    if (this.name !== d) {
+                        data[`${d}Id`] = relationEntityId
+
+                    }
+                })
+
+                await this.redis.hset(relateThrough, {
+                    [id]: { id, ...data }
+                })
+            }
+            return {
+                success: true,
+                data: null
+            }
+        }
+
+    }
+
+
     async isExists(field: keyof T, value: string): Promise<boolean> {
         const data = await this.redis.hvals(this.name) as T[]
         return new Promise<boolean>((resolve) => {
@@ -112,4 +155,6 @@ export class EntityModel<T, R = any> {
     private async _getAllKeys(): Promise<string[]> {
         return await this.redis.hkeys(`${this.name}`)
     }
+
+
 }

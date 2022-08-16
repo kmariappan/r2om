@@ -13,6 +13,7 @@ export type Field<T> = {
     type: FieldType;
     relation?: RelationType;
     releatedTo?: T
+    relateThrough?: string
     required?: boolean;
     unique?: boolean;
     minLength?: number;
@@ -20,7 +21,7 @@ export type Field<T> = {
     min?: number;
     max?: number;
     scalarIdentifier?: string
-    isScalarField?: boolean
+    isScalarField?: boolean    
 };
 
 export type Attribute<T> = {
