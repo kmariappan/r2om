@@ -22,7 +22,6 @@ export class FilterBuilder<T, R> extends HelperClass {
         data: []
     }
 
-    private relationModelIds = new Set<string>([])
     private relationModelIdsArray: string[] = []
 
     constructor(private args: ConstructorArgs, private findType: FindType, private findBy?: string | string[]) {
@@ -111,26 +110,19 @@ export class FilterBuilder<T, R> extends HelperClass {
             const relatedThroughData = relatedThrough ? await this.args.redis.hvals(relatedThrough) : null
             const releatedModelName = this.getRelatedModelName(relatedThrough, this.args.name)
             const relatedModelData = await this.args.redis.hvals(releatedModelName)
-
-            //console.log(relatedModelData);
-            //console.log(relatedThroughData);
-
             try {
                 this.result.data?.forEach((p: any) => {
                     if (relation === 'oneToOne') {
                         const filteredData = relatedData.filter((d: any) => d.id === p.id)
                         p[key] = filteredData[0] ?? null
 
-                    } if (relation === 'manyToMany') {
-
+                    } else if (relation === 'manyToMany') {
                         let destinationModelId = `${releatedModelName}Id`
-
                         if (relatedThroughData !== null) {
                             this.relationModelIdsArray = []
                             const thisModelKey = `${this.args.name}Id`
                             relatedThroughData.filter((data: any) => data[thisModelKey])
                             const filteredData = relatedThroughData.filter((d: any) => d[thisModelKey] === p.id)
-                            // console.log(modelKey);
                             filteredData.forEach((d: any) => {
                                 this.relationModelIdsArray.push(d[destinationModelId]);
                             })
@@ -141,7 +133,7 @@ export class FilterBuilder<T, R> extends HelperClass {
                             })
                             p[key] = relationFilterResult
                         }
-                    } else {
+                    } else if (relation === 'oneToMany') {
                         const filteredData = relatedData.filter((d: any) => d[scalarIdentifier] === p.id)
                         p[key] = filteredData
                     }

@@ -1,45 +1,67 @@
 const InitialSchemaTemplate = `
 import { createSchema, generateModels } from 'r2om'
 
-type Models = 'user' | 'profile' | 'post' | 'category'
+type Models = 'user' | 'profile' | 'post' | 'category' | 'role'
 
 const schema = createSchema<Models>({
     'user': {
-        label: 'User',        
+        label: 'User',
         attributes: {
-            'firstname': {
+            firstname: {
                 type: 'string',
                 required: true
             },
-            'lastname': {
+            lastname: {
                 type: 'string'
             },
-            'profile': {
+            profile: {
                 type: 'relation',
                 relation: 'oneToOne',
                 releatedTo: 'profile',
                 scalarIdentifier: 'userId'
             },
-            'posts': {
+            posts: {
                 type: 'relation',
                 relation: 'oneToMany',
                 releatedTo: 'post',
                 scalarIdentifier: 'authorId'
+            },
+            roles:{
+                type:'relation',
+                relation:'manyToMany',
+                releatedTo:'role',
+                relateThrough:'role_user'
             }
         }
     },
     'profile': {
         label: 'Profile',
-        isOneToOneModel:true,
+        isOneToOneModel: true,
         attributes: {
             username: {
                 type: 'string'
             },
             email: {
                 type: 'email'
-            }   
+            }
         }
     },
+    'role': {
+        label: 'Role',
+        attributes: {
+            name: {
+                type: 'string',
+                required: true
+            },
+            users: {
+                type: 'relation',
+                relation: 'manyToMany',
+                releatedTo: 'user',
+                relateThrough: 'role_user'
+            }
+        }
+    },
+
     'category': {
         label: 'Category',
         attributes: {
@@ -50,7 +72,8 @@ const schema = createSchema<Models>({
             posts: {
                 type: 'relation',
                 relation: 'manyToMany',
-                releatedTo: 'post'
+                releatedTo: 'post',
+                relateThrough: 'category_post'
             }
         }
     },
@@ -71,6 +94,7 @@ const schema = createSchema<Models>({
                 type: 'relation',
                 relation: 'manyToMany',
                 releatedTo: 'category',
+                relateThrough: 'category_post'
             }
         }
     }
