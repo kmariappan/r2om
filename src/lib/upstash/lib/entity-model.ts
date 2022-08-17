@@ -124,37 +124,64 @@ export class EntityModel<T, R = any> {
     }
 
     async attach(thisId: string, relationKey: keyof R, relationEntityId: string): Promise<Result> {
-        const key = relationKey as string
-        if (this.schema.attributes[key].relation !== 'manyToMany') {
-            return {
-                success: false,
-                data: null
-            }
-        } else {
-            const { relateThrough } = this.schema.attributes[key]
-
-            if (relateThrough) {
-                let id = cuid()
-                const data: any = {
-                    [`${this.name}Id`]: thisId
-                }
-                relateThrough.split('_').forEach((d) => {
-                    if (this.name !== d) {
-                        data[`${d}Id`] = relationEntityId
-
+        return new Promise<Result>(async (resolve) => {
+            const key = relationKey as string
+            if (this.schema.attributes[key].relation !== 'manyToMany') {
+                resolve(
+                    {
+                        success: false,
+                        data: null
                     }
-                })
+                )
+            } else {
+                const { relateThrough } = this.schema.attributes[key]
+                if (relateThrough) {
+                    let id = cuid()
+                    const sourceKey = `${this.name}Id`
+                    let destinationKey = ''
 
-                await this.redis.hset(relateThrough, {
-                    [id]: { id, ...data }
-                })
-            }
-            return {
-                success: true,
-                data: null
-            }
-        }
+                    const data: any = {
+                        [sourceKey]: thisId
+                    }
+                    relateThrough.split('_').forEach((d) => {
+                        if (this.name !== d) {
+                            destinationKey = `${d}Id`
+                            data[destinationKey] = relationEntityId
+                        }
+                    })
 
+                    const values = await this.redis.hvals(relateThrough)
+
+                    const filteredData = values.filter((value: any) => value[sourceKey] === data[sourceKey] && value[destinationKey] === data[destinationKey])
+
+                    if (filteredData && filteredData.length > 0) {
+                        resolve({
+                            success: false,
+                            data: null,
+                            errors: {
+                                type: 'other',
+                                message: 'Object Attached Already'
+                            }
+                        })
+                    } else {
+                        this.redis.hset(relateThrough, {
+                            [id]: { id, ...data }
+                        }).then(res => {
+                            if (res) {
+                                resolve(
+                                    {
+                                        success: true,
+                                        data: null
+                                    }
+                                )
+                            } else {
+                                resolve({ success: false, data: null, errors: { type: 'other', message: 'unknown' } })
+                            }
+                        })
+                    }
+                }
+            }
+        })
     }
 
 

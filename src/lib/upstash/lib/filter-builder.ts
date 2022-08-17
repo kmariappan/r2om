@@ -1,4 +1,5 @@
 import { ConstructorArgs, RelationType, Result } from "../types/base"
+import { HelperClass } from "./helper"
 
 type FindType = 'all' | 'one' | 'many'
 
@@ -10,7 +11,7 @@ type QueryType<T, R> = {
     sortOrder: SortType
 }
 
-export class FilterBuilder<T, R> {
+export class FilterBuilder<T, R> extends HelperClass {
 
     private query: QueryType<T, R> = {
         sortOrder: 'asc'
@@ -21,7 +22,12 @@ export class FilterBuilder<T, R> {
         data: []
     }
 
-    constructor(private args: ConstructorArgs, private findType: FindType, private findBy?: string | string[]) { }
+    private relationModelIds = new Set<string>([])
+    private relationModelIdsArray: string[] = []
+
+    constructor(private args: ConstructorArgs, private findType: FindType, private findBy?: string | string[]) {
+        super()
+    }
 
     async get(): Promise<Result<T[]>> {
         const { name, redis } = this.args
@@ -97,15 +103,44 @@ export class FilterBuilder<T, R> {
 
     private async populateField(key: keyof R): Promise<boolean> {
         return new Promise<boolean>(async (resolve) => {
+            const schema = JSON.parse(this.args.schema)
             const k = key as unknown as string
             const { relation, releatedTo, scalarIdentifier } = this.getModelKeyFromRelationProperty(k)
             const relatedData = await this.args.redis.hvals(releatedTo)
+            const relatedThrough = schema.attributes[k]?.relateThrough
+            const relatedThroughData = relatedThrough ? await this.args.redis.hvals(relatedThrough) : null
+            const releatedModelName = this.getRelatedModelName(relatedThrough, this.args.name)
+            const relatedModelData = await this.args.redis.hvals(releatedModelName)
+
+            //console.log(relatedModelData);
+            //console.log(relatedThroughData);
+
             try {
                 this.result.data?.forEach((p: any) => {
                     if (relation === 'oneToOne') {
                         const filteredData = relatedData.filter((d: any) => d.id === p.id)
                         p[key] = filteredData[0] ?? null
 
+                    } if (relation === 'manyToMany') {
+
+                        let destinationModelId = `${releatedModelName}Id`
+
+                        if (relatedThroughData !== null) {
+                            this.relationModelIdsArray = []
+                            const thisModelKey = `${this.args.name}Id`
+                            relatedThroughData.filter((data: any) => data[thisModelKey])
+                            const filteredData = relatedThroughData.filter((d: any) => d[thisModelKey] === p.id)
+                            // console.log(modelKey);
+                            filteredData.forEach((d: any) => {
+                                this.relationModelIdsArray.push(d[destinationModelId]);
+                            })
+                            const relationFilterResult: any[] = []
+                            this.relationModelIdsArray.forEach(id => {
+                                const relData = relatedModelData.filter((rd: any) => rd.id === id)
+                                relationFilterResult.push(relData[0]);
+                            })
+                            p[key] = relationFilterResult
+                        }
                     } else {
                         const filteredData = relatedData.filter((d: any) => d[scalarIdentifier] === p.id)
                         p[key] = filteredData
@@ -115,9 +150,9 @@ export class FilterBuilder<T, R> {
             } catch (error) {
                 resolve(false)
             }
-
         })
     }
+
 
     private getModelKeyFromRelationProperty(relationProperty: string): {
         relation: RelationType,
