@@ -2,7 +2,7 @@
 const { promises: Fs } = require('fs')
 const copy = require("recursive-copy");
 const rimraf = require('rimraf')
-const InitialSchemaTemplate = require('./schema.js')
+const InitialSchemaTemplate = require('../templates/schema.js')
 const fse = require('fs-extra')
 const { spawn, exec } = require('child_process')
 //const prettier = require("prettier");
