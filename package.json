@@ -57,6 +57,7 @@
     "@size-limit/preset-small-lib": "^7.0.4",
     "@types/yargs": "^17.0.10",
     "@upstash/redis": "^1.10.2",
+    "cuid": "^2.1.8",
     "cz-conventional-changelog": "^3.3.0",
     "husky": "^7.0.4",
     "semantic-release": "^18.0.1",
@@ -84,6 +85,7 @@
   },
   "peerDependencies": {
     "@upstash/redis": "^1.11.0",
-    "zod": "^3.18.0"
+    "zod": "^3.18.0",
+    "cuid": "^2.1.8"
   }
 }

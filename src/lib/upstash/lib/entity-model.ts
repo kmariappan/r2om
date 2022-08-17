@@ -1,6 +1,6 @@
 import { Redis } from "@upstash/redis";
 import { ConstructorArgs, DefaultProps, Model, Result, ValidationError } from "../types/base";
-import cuid from './external/cuid'
+import cuid from 'cuid'
 import { FilterBuilder } from "./filter-builder";
 
 
@@ -19,13 +19,6 @@ export class EntityModel<T, R = any> {
         this.args = args
     }
 
-    /*    new(value: Omit<T, keyof DefaultProps>): Entity<T, R> {
-           return new Entity<T, R>(value, this.args)
-       }
-    */
-    /*     manage(value: Partial<T>): Entity<T, R> {
-            return new Entity<T, R>(value, this.args, true)
-        } */
 
     findAll(): FilterBuilder<T, R> {
         return new FilterBuilder<T, R>(this.args, 'all')
@@ -35,13 +28,12 @@ export class EntityModel<T, R = any> {
         return new FilterBuilder<T, R>(this.args, 'one', id)
     }
 
-
     findMany(ids: string[]) {
         return new FilterBuilder<T, R>(this.args, 'many', ids)
     }
 
-    async create(value: Omit<T, keyof DefaultProps>): Promise<Result> {
-        return new Promise<Result>((resolve) => {
+    async create(value: Omit<T, keyof DefaultProps>): Promise<Result<T>> {
+        return new Promise<Result<T>>((resolve) => {
             this.validationSchema.safeParseAsync(value).then((res: any) => {
                 if (!res.success) {
                     const validataionError: ValidationError[] = []
@@ -67,7 +59,24 @@ export class EntityModel<T, R = any> {
             }
 
             const time = Date.now().toString()
-            this.redis.hset(this.name, { [id]: { id, createdAt: time, updatedAt: time, ...value } }).then(res => {
+
+            const entity = { id, createdAt: time, updatedAt: time, ...value }
+
+            this.redis.hset(this.name, { [id]: { ...entity } }).then(res => {
+                resolve({
+                    success: true,
+                    data: entity as unknown as T
+                })
+            })
+        })
+    }
+
+    async update(id: string, value: Partial<T>): Promise<Result> {
+        const data = await this.redis.hget(this.name, id) as T 
+        const updatedAt = Date.now().toString()      
+
+        return new Promise<Result>((resolve) => {
+            this.redis.hset(this.name, { [id]: {...data, ...value, updatedAt } }).then(res => {
                 resolve({
                     success: true,
                     data: null
@@ -75,24 +84,6 @@ export class EntityModel<T, R = any> {
             })
         })
     }
-
-    /*     async createMany(values: OmitId<T>[]): Promise<"OK"> {
-            const id = Date.now().toString()
-            const data = {}
-            console.log(values)
-            values.forEach(v => {
-                Object.defineProperty(data, id, { value: { id, ...v }, enumerable: true })
-            })
-            return this.redis.hmset<T>(this.name, { ...data })
-        } */
-
-    /*     async update(id: string, value: Partial<T>): Promise<Partial<T>> {
-            const key = this._getnerateKeyById(id)
-            const data = await this.redis.get<T>(key)
-            const updatedDate = { ...data, ...value }
-            return this.redis.set<Partial<T>>(key, { ...updatedDate })
-        }
-     */
 
     async getSchema(): Promise<Model<T>> {
         return this.schema
@@ -106,19 +97,38 @@ export class EntityModel<T, R = any> {
         })
     }
 
-    async delete(id: string): Promise<number> {
-        return await this.redis.hdel(this.name, id)
-    }
-
-    async deleteMany(ids: string[]): Promise<any> {
-        const promises: Array<any> = []
-        ids.forEach((id) => {
-            promises.push(this.redis.hdel(this.name, id))
+    async delete(id: string): Promise<Result> {
+        return new Promise<Result>((resolve) => {
+            this.redis.hdel(this.name, id).then(() => {
+                resolve({ success: true, data: null })
+            }).catch(err => {
+                if (err) {
+                    resolve({ success: false, data: null })
+                }
+            })
         })
-        return Promise.all(promises)
     }
 
-    async deleteAll(): Promise<number> {
+    async deleteMany(ids: string[]): Promise<Result> {
+        return new Promise<Result>((resolve) => {
+            const promises: Array<any> = []
+            ids.forEach((id) => {
+                promises.push(this.redis.hdel(this.name, id))
+            })
+            Promise.all(promises).then(res => {
+                resolve({
+                    success: true,
+                    data: null
+                })
+            }).catch(err => {
+                if (err) {
+                    resolve({ success: false, data: null })
+                }
+            })
+        })
+    }
+
+    async deleteAll(): Promise<Result> {
         const keys = await this._getAllKeys()
         return await this.deleteMany(keys)
     }
