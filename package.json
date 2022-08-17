@@ -41,7 +41,7 @@
   },
   "name": "r2om",
   "author": "Karthikeyan Mariappan",
-  "description": "Redis Rest Api based Object Mapper",
+  "description": "Redis Rest Api Object Mapper",
   "module": "dist/r2om.esm.js",
   "size-limit": [
     {

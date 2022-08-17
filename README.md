@@ -1,11 +1,13 @@
-# R2 - OM  (Redis Rest OM)
+# R2OM  (Redis Rest Object Mapper)
 
 ## Installation
 
 ```bash
-npm i r2om @upstash/redis zod
+npm install r2om --save-dev 
+npm install @upstash/redis zod cuid
 
  or
 
-yarn add r2om @upstash/redis zod
+yarn add -D r2om 
+yarn add @upstash/redis zod cuid
 ```
